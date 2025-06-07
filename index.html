@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Saper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/ed8f9c16b4.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="saper-app" class="container mx-auto max-w-[70%] px-4 bg-gray-100 pb-5"></div>
+
+<script>
+    // =============================== < Z M I E N N E > =====================================
+
+
+    const numberColors = ['blue-600', 'green-600', 'red-600', 'indigo-700', 'red-950', 'cyan-600', 'black', 'gray-700'];
+    const localStorage = [];
+    let cells = [];
+    let discovered = [];
+
+
+    // =================================== < D O M > =========================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+
+        // =========================== < F U N K C J E > =====================================
+
+
+        const appContainer = document.getElementById('saper-app');
+        if (!appContainer) {
+            console.error("Nie znaleziono kontenera #saper-app");
+            return;
+        }
+
+        // Funkcje pomocnicze
+        function createElement(tag, classNames = [], textContent = '') {
+            const element = document.createElement(tag);
+            if (classNames.length > 0) {
+                element.className = classNames.join(' ');
+            }
+            if (textContent) {
+                element.textContent = textContent;
+            }
+            return element;
+        }
+
+
+        function increaseTimer() {
+            const timer = document.getElementById('timer');
+            const time = parseInt(timer.textContent) + 1;
+            let prefix = '';
+            if(time < 10) {
+                prefix = '00';
+            } else if (time < 100) {
+                prefix = '0';
+            }
+            timer.textContent = prefix + time;
+        }
+
+
+        function fillCells(width, height, bombAmount) {
+            cells = [];
+            let bombs = [];
+            let area = width * height;
+
+            // Generating bombs
+            while(bombs.length < bombAmount) {
+                const randomNumber = Math.floor(Math.random() * area);
+                if(!bombs.includes(randomNumber)) bombs.push(randomNumber);
+            }
+
+            // Planting bombs
+            for (let i = 0; i < area; i++) {
+                bombs.includes(i) ? cells[i] = 9 : cells[i] = 0;
+                discovered[i] = false;
+            }
+
+            // Generating hints
+            bombs.forEach(position => {
+                let left = true, right = true, up = true, down = true;
+                if((position-1) % width === width-1) left = false;
+                if((position+1) % width === 0) right = false;
+                if(position < width) up = false;
+                if(position >= area-width) down = false;
+
+                if(left){
+                    if(up) cells[position-width-1]++;
+                    cells[position-1]++;
+                    if(down) cells[position+width-1]++;
+                }
+
+                if(up) cells[position-width]++;
+                if(down) cells[position+width]++;
+
+                if(right){
+                    if(up) cells[position-width+1]++;
+                    cells[position+1]++;
+                    if(down) cells[position+width+1]++;
+                }
+            });
+        }
+
+
+        function showBombs(index) {
+            cells.forEach((value, i) => {
+                if(value < 0 && value > -10){
+                    document.getElementById(i).classList.replace('bg-gray-500', 'bg-red-700');
+                } else if (value >= 9 && i !== index){
+                    const cell = document.getElementById(i);
+                    cell.classList.replace('bg-gray-500', 'bg-gray-300');
+                    cell.appendChild(createElement('i', ['fa-solid', 'fa-bomb', 'text-xl']));
+                }
+            })
+        }
+
+
+        function flag(index) {
+            cells[index] = (-1 * cells[index]) - 1;
+            document.getElementById(index).appendChild(createElement('i', ['fa-solid', 'fa-flag', 'text-xl']));
+            return cells[index];
+        }
+
+
+        function unflag(index) {
+            cells[index] = (-1 * cells[index]) - 1;
+            document.getElementById(index).innerHTML = '';
+            return cells[index];
+        }
+
+
+        function discover(index) {
+            if(cells[index] >= 0 && discovered[index] === false) {
+                discovered[index] = true;
+
+                if(cells[index] === 0) {
+                    document.getElementById(index).classList.replace('bg-gray-500', 'bg-gray-300');
+
+                } else if(cells[index] > 0 && cells[index] < 9) {
+                    const cell = document.getElementById(index);
+                    cell.classList.replace('bg-gray-500', 'bg-gray-300');
+                    cell.appendChild(createElement('p', ['text-xl', 'font-bold', `text-${numberColors[cells[index]-1]}`], cells[index]));
+
+                } else if(cells[index] >= 9) {
+                    const cell = document.getElementById(index);
+                    cell.classList.replace('bg-gray-500', 'bg-red-500');
+                    cell.appendChild(createElement('i', ['fa-solid', 'fa-bomb', 'text-xl']));
+                }
+            }
+        }
+
+
+        function discoverArea(width, height, index) {
+            if(!discovered.includes(index)) {
+                discovered.push(index);
+                if(cells[index] >= 0 && cells[index] < 9) {
+                    discover(index);
+                }
+
+                if(cells[index] === 0) {
+                    let left = true, right = true, up = true, down = true;
+                    if ((index - 1) % width === width - 1) left = false;
+                    if ((index + 1) % width === 0) right = false;
+                    if (index < width) up = false;
+                    if (index >= width * (height-1)) down = false;
+
+                    if (left) {
+                        if(up) discoverArea(width, height, index-width-1);
+                        discoverArea(width, height, index-1);
+                        if(down) discoverArea(width, height, index+width-1);
+                    }
+
+                    if(up) discoverArea(width, height, index-width);
+                    if (down) discoverArea(width, height, index + width);
+
+                    if (right) {
+                        if(up) discoverArea(width, height, index-width+1);
+                        discoverArea(width, height, index+1);
+                        if(down) discoverArea(width, height, index+width+1);
+                    }
+                }
+            }
+        }
+
+
+        function discoveredAmount() {
+            return discovered.reduce((acc, value) => value === true ? acc+=1 : acc, 0);
+        }
+
+
+        // ============================ < H E A D E R > ======================================
+
+
+        // Tworzenie Nagłówka Aplikacji
+        const header = createElement('header', ['flex', 'flex-col', 'text-center']);
+        const mainTitle = createElement('h1', ['rounded-xl', 'bg-blue-600', 'py-4', 'text-center', 'text-white', 'text-2xl', 'font-bold', 'shadow', 'mt-5', 'mb-10'], 'Super Saper 3000');
+        header.appendChild(mainTitle);
+        appContainer.appendChild(header);
+
+
+        // =========================== < C O N T E N T > =====================================
+
+
+        const settings = createElement('div', ['flex', 'flex-row', 'text-left', 'rounded-md', 'bg-white', 'p-5', 'mb-10']);
+        const stats = createElement('div', ['flex', 'flex-row', 'bg-white', 'p-5', 'mb-5']);
+        const timer = createElement('p', ['text-xl'], '000');
+        timer.id = 'timer';
+        setInterval(increaseTimer, 1000);
+
+        const container = createElement('div', ['flex', 'flex-col', 'flex-nowrap', 'justify-between', 'items-center']);
+        const saper = createElement('div', []);
+
+
+        function startGame(width, height, bombAmount) {
+
+            let over = false;
+            fillCells(width, height, bombAmount);
+            saper.className = `p-3xl grid grid-cols-${width} gap-1`;
+            saper.innerHTML = '';
+
+            cells.forEach((cell, index) => {
+                const element = createElement('div', ['size-8', 'aspect-square', 'flex', 'flex-col', 'bg-gray-500', 'rounded-md', 'text-center', 'justify-center']);
+                element.id = index;
+
+                element.addEventListener('contextmenu', function(e) {
+                    if(!over) {
+                        if (cell >= 0 && !discovered[index]) {
+                            cell = flag(index);
+                        } else if (cell < 0) {
+                            cell = unflag(index);
+                        }
+                    }
+                    e.preventDefault();
+                }, false);
+
+                element.onclick = () => {
+                    if(!over && !discovered[index]) {
+                        discover(index);
+
+                        if (cell >= 9) {
+                            showBombs(index);
+                            over = true;
+                        }
+                        if (cell === 0) {
+                            discoverArea(width, height, index);
+                        }
+
+                        if(discoveredAmount() === width*height-bombAmount && over === false) {
+                            // TODO: WYGRANA
+                            console.log("WIN!");
+                            over = true;
+                        }
+                    }
+                }
+
+                saper.appendChild(element);
+            });
+        }
+
+
+        // ============================ < R E N D E R > ======================================
+
+
+        startGame(12, 30, 10);
+        console.log(saper.offsetWidth);
+        // stats.style.width = saper.offsetWidth() + 'px';
+        stats.appendChild(timer);
+        container.appendChild(stats);
+        container.appendChild(saper);
+        appContainer.appendChild(container);
+
+
+        // ============================ < S T O P K A > ======================================
+
+
+        const footer = createElement('footer', ['text-center', 'text-xs', 'text-gray-500', 'mt-10', 'pt-5', 'border-t']);
+        footer.innerHTML = `&copy; 2025 Saper s30274`;
+        appContainer.appendChild(footer);
+
+    });
+
+</script>
+
+</body>
+</html>
