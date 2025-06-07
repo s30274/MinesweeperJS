@@ -17,6 +17,7 @@
     const localStorage = [];
     let cells = [];
     let discovered = [];
+    let flags;
 
 
     // =================================== < D O M > =========================================
@@ -47,15 +48,20 @@
 
 
         function increaseTimer() {
-            const timer = document.getElementById('timer');
-            const time = parseInt(timer.textContent) + 1;
+            const timerElement = document.getElementById('timer');
+            const time = parseInt(timerElement.textContent) + 1;
+            timerElement.textContent = formatThreeDigit(time);
+        }
+
+
+        function formatThreeDigit(number) {
             let prefix = '';
-            if(time < 10) {
+            if(number < 10) {
                 prefix = '00';
-            } else if (time < 100) {
+            } else if (number < 100) {
                 prefix = '0';
             }
-            timer.textContent = prefix + time;
+            return prefix + number;
         }
 
 
@@ -78,27 +84,37 @@
 
             // Generating hints
             bombs.forEach(position => {
-                let left = true, right = true, up = true, down = true;
-                if((position-1) % width === width-1) left = false;
-                if((position+1) % width === 0) right = false;
-                if(position < width) up = false;
-                if(position >= area-width) down = false;
-
-                if(left){
-                    if(up) cells[position-width-1]++;
-                    cells[position-1]++;
-                    if(down) cells[position+width-1]++;
-                }
-
-                if(up) cells[position-width]++;
-                if(down) cells[position+width]++;
-
-                if(right){
-                    if(up) cells[position-width+1]++;
-                    cells[position+1]++;
-                    if(down) cells[position+width+1]++;
-                }
+                execAround(width, height, position, incrementCell);
             });
+        }
+
+
+        function execAround(width, height, index, func) {
+            let left = true, right = true, up = true, down = true;
+            if ((index - 1) % width === (width - 1) || (index - 1) % width < 0) left = false;
+            if ((index + 1) % width === 0) right = false;
+            if (index < width) up = false;
+            if (index >= width * (height-1)) down = false;
+
+            if (left) {
+                if(up) func(width, height, index-width-1);
+                func(width, height, index-1);
+                if(down) func(width, height, index+width-1);
+            }
+
+            if(up) func(width, height, index-width);
+            if (down) func(width, height, index + width);
+
+            if (right) {
+                if(up) func(width, height, index-width+1);
+                func(width, height, index+1);
+                if(down) func(width, height, index+width+1);
+            }
+        }
+
+
+        function incrementCell(width, height, position) {
+            cells[position]++;
         }
 
 
@@ -117,20 +133,25 @@
 
         function flag(index) {
             cells[index] = (-1 * cells[index]) - 1;
+            flags -= 1;
             document.getElementById(index).appendChild(createElement('i', ['fa-solid', 'fa-flag', 'text-xl']));
+            document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
             return cells[index];
         }
 
 
         function unflag(index) {
             cells[index] = (-1 * cells[index]) - 1;
+            flags += 1;
             document.getElementById(index).innerHTML = '';
+            document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
             return cells[index];
         }
 
 
         function discover(index) {
             if(cells[index] >= 0 && discovered[index] === false) {
+
                 discovered[index] = true;
 
                 if(cells[index] === 0) {
@@ -151,33 +172,18 @@
 
 
         function discoverArea(width, height, index) {
-            if(!discovered.includes(index)) {
-                discovered.push(index);
-                if(cells[index] >= 0 && cells[index] < 9) {
+            if(discovered[index] === false) {
+
+                if(cells[index] < 0) {
+                    unflag(index);
+                }
+
+                if(cells[index] < 9) {
                     discover(index);
                 }
 
                 if(cells[index] === 0) {
-                    let left = true, right = true, up = true, down = true;
-                    if ((index - 1) % width === width - 1) left = false;
-                    if ((index + 1) % width === 0) right = false;
-                    if (index < width) up = false;
-                    if (index >= width * (height-1)) down = false;
-
-                    if (left) {
-                        if(up) discoverArea(width, height, index-width-1);
-                        discoverArea(width, height, index-1);
-                        if(down) discoverArea(width, height, index+width-1);
-                    }
-
-                    if(up) discoverArea(width, height, index-width);
-                    if (down) discoverArea(width, height, index + width);
-
-                    if (right) {
-                        if(up) discoverArea(width, height, index-width+1);
-                        discoverArea(width, height, index+1);
-                        if(down) discoverArea(width, height, index+width+1);
-                    }
+                    execAround(width, height, index, discoverArea);
                 }
             }
         }
@@ -202,10 +208,20 @@
 
 
         const settings = createElement('div', ['flex', 'flex-row', 'text-left', 'rounded-md', 'bg-white', 'p-5', 'mb-10']);
-        const stats = createElement('div', ['flex', 'flex-row', 'bg-white', 'p-5', 'mb-5']);
-        const timer = createElement('p', ['text-xl'], '000');
+        const stats = createElement('div', ['flex', 'flex-row', 'bg-white', 'p-2', 'mb-4']);
+
+        const flagCounter = createElement('p', ['text-lg'], '000');
+        flagCounter.id = 'flagCounter';
+        stats.appendChild(flagCounter);
+
+        const face = createElement('i', ['fa-solid', 'fa-face-smile', 'text-2xl']);
+        face.id = 'face';
+        stats.appendChild(face);
+
+        const timer = createElement('p', ['text-lg'], '000');
         timer.id = 'timer';
-        setInterval(increaseTimer, 1000);
+        const timerVar = setInterval(increaseTimer, 1000);
+        stats.appendChild(timer);
 
         const container = createElement('div', ['flex', 'flex-col', 'flex-nowrap', 'justify-between', 'items-center']);
         const saper = createElement('div', []);
@@ -214,8 +230,9 @@
         function startGame(width, height, bombAmount) {
 
             let over = false;
+            flags = bombAmount;
             fillCells(width, height, bombAmount);
-            saper.className = `p-3xl grid grid-cols-${width} gap-1`;
+            saper.className = `grid grid-cols-${width} grid-rows-${height} gap-1`;
             saper.innerHTML = '';
 
             cells.forEach((cell, index) => {
@@ -224,7 +241,7 @@
 
                 element.addEventListener('contextmenu', function(e) {
                     if(!over) {
-                        if (cell >= 0 && !discovered[index]) {
+                        if (flags > 0 && cell >= 0 && !discovered[index]) {
                             cell = flag(index);
                         } else if (cell < 0) {
                             cell = unflag(index);
@@ -235,23 +252,28 @@
 
                 element.onclick = () => {
                     if(!over && !discovered[index]) {
-                        discover(index);
+
+                        if (cell === 0) {
+                            discoverArea(width, height, index);
+                        } else {
+                            discover(index);
+                        }
 
                         if (cell >= 9) {
                             showBombs(index);
+                            clearInterval(timerVar);
+                            document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-dizzy');
                             over = true;
-                        }
-                        if (cell === 0) {
-                            discoverArea(width, height, index);
                         }
 
                         if(discoveredAmount() === width*height-bombAmount && over === false) {
-                            // TODO: WYGRANA
-                            console.log("WIN!");
+                            document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-laugh-beam');
+                            clearInterval(timerVar);
                             over = true;
                         }
                     }
                 }
+
 
                 saper.appendChild(element);
             });
@@ -261,13 +283,11 @@
         // ============================ < R E N D E R > ======================================
 
 
-        startGame(12, 30, 10);
-        console.log(saper.offsetWidth);
-        // stats.style.width = saper.offsetWidth() + 'px';
-        stats.appendChild(timer);
         container.appendChild(stats);
+        startGame(9, 9, 10);
         container.appendChild(saper);
         appContainer.appendChild(container);
+        document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
 
 
         // ============================ < S T O P K A > ======================================
