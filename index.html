@@ -7,17 +7,27 @@
     <script src="https://kit.fontawesome.com/ed8f9c16b4.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<div id="saper-app" class="container mx-auto max-w-[70%] px-4 bg-gray-100 pb-5"></div>
+<div id="saper-app" class="container mx-auto lg:max-w-[70%] sm:max-w-[100%] px-4 bg-gray-100 pb-5"></div>
 
 <script>
     // =============================== < Z M I E N N E > =====================================
 
 
     const numberColors = ['blue-600', 'green-600', 'red-600', 'indigo-700', 'red-950', 'cyan-600', 'black', 'gray-700'];
-    const localStorage = [];
+    const localStorage = [
+        { difficulty: 'easy', time: 50 },
+        { difficulty: 'easy', time: 250 },
+        { difficulty: 'easy', time: 350 },
+        { difficulty: 'easy', time: 300 },
+        { difficulty: 'easy', time: 240 },
+        { difficulty: 'hard', time: 250 },
+        { difficulty: 'expert', time: 250 },
+
+    ];
     let cells = [];
     let discovered = [];
     let flags;
+    let startArguments = [31, 6, 10];
 
 
     // =================================== < D O M > =========================================
@@ -121,9 +131,9 @@
         function showBombs(index) {
             cells.forEach((value, i) => {
                 if(value < 0 && value > -10){
-                    document.getElementById(i).classList.replace('bg-gray-500', 'bg-red-700');
+                    document.getElementById(i.toString()).classList.replace('bg-gray-500', 'bg-red-700');
                 } else if (value >= 9 && i !== index){
-                    const cell = document.getElementById(i);
+                    const cell = document.getElementById(i.toString());
                     cell.classList.replace('bg-gray-500', 'bg-gray-300');
                     cell.appendChild(createElement('i', ['fa-solid', 'fa-bomb', 'text-xl']));
                 }
@@ -190,7 +200,59 @@
 
 
         function discoveredAmount() {
-            return discovered.reduce((acc, value) => value === true ? acc+=1 : acc, 0);
+            return discovered.reduce((acc, value) => value === true ? acc + 1 : acc, 0);
+        }
+
+
+        function saveTime(difficulty) {
+            if(difficulty !== 'custom') {
+                localStorage.push({difficulty: 'easy', time: parseInt(document.getElementById('timer').textContent) });
+                let timetable = localStorage.filter((record) => record.difficulty === 'easy');
+                timetable.sort((a, b) => (a.time > b.time) ? 1 : (a.time < b.time) ? -1 : 0);
+                if(timetable.length > 5) {
+                    localStorage.splice(localStorage.indexOf(timetable.pop()), 1);
+                }
+            }
+        }
+
+
+        function updateScoreTable(difficulty) {
+            const scoreTable = document.getElementById('scoreTable');
+            scoreTable.innerHTML = '';
+
+            if(difficulty !== 'custom') {
+                const header = createElement('thead', []);
+                const headRecord = createElement('tr', []);
+                headRecord.appendChild(createElement('th', ['text-left'], 'Difficulty'));
+                headRecord.appendChild(createElement('th', ['text-right'], 'Time'));
+                header.appendChild(headRecord);
+                scoreTable.appendChild(header);
+
+                const body = createElement('tbody', []);
+                localStorage.filter((record) => record.difficulty === 'easy')
+                    .sort((a, b) => (a.time > b.time) ? 1 : (a.time < b.time) ? -1 : 0)
+                    .forEach((score) => {
+                        console.log(score);
+                        const tr = createElement('tr', '');
+                        tr.appendChild(createElement('td', ['text-left'], score.difficulty));
+                        tr.appendChild(createElement('td', ['text-right'], score.time));
+                        body.appendChild(tr);
+                    });
+                scoreTable.appendChild(body);
+            }
+        }
+
+
+        function getDifficulty(width, height, bombAmount) {
+            if(width === 9 && height === 9 && bombAmount === 10) {
+                return 'easy';
+            } else if(width === 16 && height === 16 && bombAmount === 40) {
+                return 'hard';
+            } else if(width === 30 && height === 16 && bombAmount === 99) {
+                return 'expert';
+            } else {
+                return 'custom';
+            }
         }
 
 
@@ -208,6 +270,7 @@
 
 
         const settings = createElement('div', ['flex', 'flex-row', 'text-left', 'rounded-md', 'bg-white', 'p-5', 'mb-10']);
+        const container = createElement('div', ['w-full', 'flex', 'flex-col', 'flex-nowrap', 'justify-between', 'items-center']);
         const stats = createElement('div', ['flex', 'flex-row', 'bg-white', 'p-2', 'mb-4']);
 
         const flagCounter = createElement('p', ['text-lg'], '000');
@@ -216,29 +279,41 @@
 
         const face = createElement('i', ['fa-solid', 'fa-face-smile', 'text-2xl']);
         face.id = 'face';
+        face.onclick = () => {
+            startGame(startArguments[0], startArguments[1], startArguments[2]);
+        }
         stats.appendChild(face);
 
         const timer = createElement('p', ['text-lg'], '000');
         timer.id = 'timer';
-        const timerVar = setInterval(increaseTimer, 1000);
         stats.appendChild(timer);
+        container.appendChild(stats);
 
-        const container = createElement('div', ['flex', 'flex-col', 'flex-nowrap', 'justify-between', 'items-center']);
         const saper = createElement('div', []);
+        saper.id = 'saper';
+
 
 
         function startGame(width, height, bombAmount) {
 
+            const saper = document.getElementById('saper');
             let over = false;
+            let first = true;
+            let timerVar;
             flags = bombAmount;
+            document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
             fillCells(width, height, bombAmount);
-            saper.className = `grid grid-cols-${width} grid-rows-${height} gap-1`;
+            const difficulty = getDifficulty(width, height, bombAmount);
+            updateScoreTable(difficulty);
+            saper.className = `w-full flex flex-col flex-nowrap justify-center 2xl:items-${width > 30 ? 'left' : 'center'} xl:items-${width > 25 ? 'left' : 'center'} lg:items-${width > 22 ? 'left' : 'center'} md:items-${width > 15 ? 'left' : 'center'} sm:items-${width > 12 ? 'left' : 'center'} items-${width > 9 ? 'left' : 'center'} gap-1 mb-10`;
             saper.innerHTML = '';
+            let row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
 
             cells.forEach((cell, index) => {
-                const element = createElement('div', ['size-8', 'aspect-square', 'flex', 'flex-col', 'bg-gray-500', 'rounded-md', 'text-center', 'justify-center']);
-                element.id = index;
+                const element = createElement('div', ['size-12', 'lg:size-8', 'aspect-square', 'flex', 'flex-col', 'bg-gray-500', 'rounded-md', 'text-center', 'justify-center']);
+                element.id = index.toString();
 
+                // FLAG
                 element.addEventListener('contextmenu', function(e) {
                     if(!over) {
                         if (flags > 0 && cell >= 0 && !discovered[index]) {
@@ -250,7 +325,13 @@
                     e.preventDefault();
                 }, false);
 
+                // DISCOVER
                 element.onclick = () => {
+                    if(first) {
+                        timerVar = setInterval(increaseTimer, 1000);
+                        first = false;
+                    }
+
                     if(!over && !discovered[index]) {
 
                         if (cell === 0) {
@@ -269,25 +350,34 @@
                         if(discoveredAmount() === width*height-bombAmount && over === false) {
                             document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-laugh-beam');
                             clearInterval(timerVar);
+                            saveTime(difficulty);
+                            updateScoreTable(difficulty);
                             over = true;
                         }
                     }
                 }
 
 
-                saper.appendChild(element);
+                row.appendChild(element);
+                if(index % width === (width-1)){
+                    saper.appendChild(row);
+                    row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
+                }
             });
         }
 
+        container.appendChild(saper);
+
+        const scoreTable = createElement('table', ['bg-white', 'p-5', 'rounded-mb']);
+        scoreTable.id = 'scoreTable';
+        container.appendChild(scoreTable);
+
+        appContainer.appendChild(container);
 
         // ============================ < R E N D E R > ======================================
 
 
-        container.appendChild(stats);
-        startGame(9, 9, 10);
-        container.appendChild(saper);
-        appContainer.appendChild(container);
-        document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
+        startGame(startArguments[0], startArguments[1], startArguments[2]);
 
 
         // ============================ < S T O P K A > ======================================
