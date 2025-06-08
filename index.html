@@ -10,7 +10,11 @@
 <div id="saper-app" class="container mx-auto lg:max-w-[70%] sm:max-w-[100%] px-4 bg-gray-100 pb-5"></div>
 
 <script>
+
+
+
     // =============================== < Z M I E N N E > =====================================
+
 
 
     const numberColors = ['blue-600', 'green-600', 'red-600', 'indigo-700', 'red-950', 'cyan-600', 'black', 'gray-700'];
@@ -20,22 +24,34 @@
         { difficulty: 'easy', time: 350 },
         { difficulty: 'easy', time: 300 },
         { difficulty: 'easy', time: 240 },
-        { difficulty: 'hard', time: 250 },
-        { difficulty: 'expert', time: 250 },
-
+        { difficulty: 'hard', time: 600 },
+        { difficulty: 'hard', time: 550 },
+        { difficulty: 'hard', time: 450 },
+        { difficulty: 'hard', time: 470 },
+        { difficulty: 'hard', time: 420 },
+        { difficulty: 'expert', time: 700 },
+        { difficulty: 'expert', time: 680 },
+        { difficulty: 'expert', time: 600 },
+        { difficulty: 'expert', time: 270 },
+        { difficulty: 'expert', time: 490 },
     ];
     let cells = [];
     let discovered = [];
     let flags;
-    let startArguments = [31, 6, 10];
+    let startArguments = [9, 9, 10];
+
 
 
     // =================================== < D O M > =========================================
 
+
+
     document.addEventListener('DOMContentLoaded', () => {
 
 
+
         // =========================== < F U N K C J E > =====================================
+
 
 
         const appContainer = document.getElementById('saper-app');
@@ -43,6 +59,7 @@
             console.error("Nie znaleziono kontenera #saper-app");
             return;
         }
+
 
         // Funkcje pomocnicze
         function createElement(tag, classNames = [], textContent = '') {
@@ -96,6 +113,8 @@
             bombs.forEach(position => {
                 execAround(width, height, position, incrementCell);
             });
+
+            console.log('Generated game data');
         }
 
 
@@ -206,12 +225,13 @@
 
         function saveTime(difficulty) {
             if(difficulty !== 'custom') {
-                localStorage.push({difficulty: 'easy', time: parseInt(document.getElementById('timer').textContent) });
-                let timetable = localStorage.filter((record) => record.difficulty === 'easy');
+                localStorage.push({difficulty: difficulty, time: parseInt(document.getElementById('timer').textContent) });
+                let timetable = localStorage.filter((record) => record.difficulty === difficulty);
                 timetable.sort((a, b) => (a.time > b.time) ? 1 : (a.time < b.time) ? -1 : 0);
                 if(timetable.length > 5) {
                     localStorage.splice(localStorage.indexOf(timetable.pop()), 1);
                 }
+                console.log('Saved time into high score table');
             }
         }
 
@@ -221,6 +241,8 @@
             scoreTable.innerHTML = '';
 
             if(difficulty !== 'custom') {
+                document.getElementById('scoreContainer').style.display = 'flex';
+
                 const header = createElement('thead', []);
                 const headRecord = createElement('tr', []);
                 headRecord.appendChild(createElement('th', ['text-left'], 'Difficulty'));
@@ -229,16 +251,17 @@
                 scoreTable.appendChild(header);
 
                 const body = createElement('tbody', []);
-                localStorage.filter((record) => record.difficulty === 'easy')
+                localStorage.filter((record) => record.difficulty === difficulty)
                     .sort((a, b) => (a.time > b.time) ? 1 : (a.time < b.time) ? -1 : 0)
                     .forEach((score) => {
-                        console.log(score);
                         const tr = createElement('tr', '');
                         tr.appendChild(createElement('td', ['text-left'], score.difficulty));
                         tr.appendChild(createElement('td', ['text-right'], score.time));
                         body.appendChild(tr);
                     });
                 scoreTable.appendChild(body);
+            } else {
+                document.getElementById('scoreContainer').style.display = 'none';
             }
         }
 
@@ -256,28 +279,98 @@
         }
 
 
+
         // ============================ < H E A D E R > ======================================
 
 
-        // Tworzenie Nagłówka Aplikacji
+
         const header = createElement('header', ['flex', 'flex-col', 'text-center']);
         const mainTitle = createElement('h1', ['rounded-xl', 'bg-blue-600', 'py-4', 'text-center', 'text-white', 'text-2xl', 'font-bold', 'shadow', 'mt-5', 'mb-10'], 'Super Saper 3000');
         header.appendChild(mainTitle);
         appContainer.appendChild(header);
 
 
-        // =========================== < C O N T E N T > =====================================
+
+        // ========================== < S E T T I N G S > ====================================
 
 
-        const settings = createElement('div', ['flex', 'flex-row', 'text-left', 'rounded-md', 'bg-white', 'p-5', 'mb-10']);
+
+        const settingsContainer = createElement('div', ['flex', 'flex-col', 'items-center', 'text-center', 'mb-10']);
+        const settings = createElement('div', ['flex', 'flex-row', 'flex-wrap', 'items-center', 'justify-center', 'rounded-xl', 'bg-white', 'p-1']);
+        const easy = createElement('button', ['p-2', 'm-2', 'bg-blue-300', 'rounded-md', 'hover:bg-blue-400', 'ease-in-out', 'duration-300'], 'easy');
+        easy.onclick = () => {
+            startArguments = [9, 9, 10];
+            startGame(startArguments[0], startArguments[1], startArguments[2]);
+            settingsError.innerHTML = '';
+        }
+        const hard = createElement('button', ['p-2', 'm-2', 'bg-blue-300', 'rounded-md', 'hover:bg-blue-400', 'ease-in-out', 'duration-300'], 'hard');
+        hard.onclick = () => {
+            startArguments = [16, 16, 40];
+            startGame(startArguments[0], startArguments[1], startArguments[2]);
+            settingsError.innerHTML = '';
+        }
+        const expert = createElement('button', ['p-2', 'm-2', 'bg-blue-300', 'rounded-md', 'hover:bg-blue-400', 'ease-in-out', 'duration-300'], 'expert');
+        expert.onclick = () => {
+            startArguments = [30, 16, 99];
+            startGame(startArguments[0], startArguments[1], startArguments[2]);
+            settingsError.innerHTML = '';
+        }
+        const custom = createElement('div', ['ml-5', 'flex', 'flex-row', 'flex-nowrap', 'items-center', 'gap-3']);
+        const customText = createElement('p', ['text-xl'], 'custom: ');
+        const customWidth = createElement('input', ['w-10', 'border-2', 'rounded-md', 'p-1']);
+        customWidth.placeholder = 'w';
+        const customHeight = createElement('input', ['w-10', 'border-2', 'rounded-md', 'p-1']);
+        customHeight.placeholder = 'h';
+        const customBombs = createElement('input', ['w-10', 'border-2', 'rounded-md', 'p-1']);
+        customBombs.placeholder = 'b';
+        const customSet = createElement('button', ['p-2', 'm-2', 'bg-gray-300', 'rounded-md', 'hover:bg-gray-400', 'ease-in-out', 'duration-300'], 'set');
+        const settingsError = createElement('p', ['text-md', 'text-red-600']);
+        customSet.onclick = () => {
+            const w = parseInt(customWidth.value);
+            const h = parseInt(customHeight.value);
+            const b = parseInt(customBombs.value);
+            if(w > 0 && h > 0 && b > 0){
+                if(b < w*h) {
+                    startArguments = [w, h, b];
+                    startGame(startArguments[0], startArguments[1], startArguments[2]);
+                    settingsError.innerHTML = '';
+                } else {
+                    console.error('Bomb number should be smaller than amount of cells in the grid');
+                    settingsError.innerHTML = 'Too much bombs';
+                }
+            } else {
+                console.error('One or more custom values are not a valid number');
+                settingsError.innerHTML = 'Not a valid number';
+            }
+        }
+        custom.appendChild(customText);
+        custom.appendChild(customWidth);
+        custom.appendChild(customHeight);
+        custom.appendChild(customBombs);
+        custom.appendChild(customSet);
+
+        settings.appendChild(easy);
+        settings.appendChild(hard);
+        settings.appendChild(expert);
+        settings.appendChild(custom);
+        settingsContainer.appendChild(settings);
+        settingsContainer.appendChild(settingsError);
+        appContainer.appendChild(settingsContainer)
+
+
+
+        // ============================= < S T A T S > =======================================
+
+
+
         const container = createElement('div', ['w-full', 'flex', 'flex-col', 'flex-nowrap', 'justify-between', 'items-center']);
-        const stats = createElement('div', ['flex', 'flex-row', 'bg-white', 'p-2', 'mb-4']);
+        const stats = createElement('div', ['w-[50%]', 'md:w-[25%]', 'flex', 'flex-row', 'justify-around', 'items-center', 'bg-white', 'rounded-xl', 'p-3', 'mb-4']);
 
         const flagCounter = createElement('p', ['text-lg'], '000');
         flagCounter.id = 'flagCounter';
         stats.appendChild(flagCounter);
 
-        const face = createElement('i', ['fa-solid', 'fa-face-smile', 'text-2xl']);
+        const face = createElement('i', ['fa-solid', 'fa-face-smile', 'text-2xl', 'hover:scale-[88%]', 'ease-in-out', 'duration-200']);
         face.id = 'face';
         face.onclick = () => {
             startGame(startArguments[0], startArguments[1], startArguments[2]);
@@ -289,98 +382,134 @@
         stats.appendChild(timer);
         container.appendChild(stats);
 
+
+
+        // ============================== < G A M E > ========================================
+
+
+
         const saper = createElement('div', []);
         saper.id = 'saper';
 
-
-
         function startGame(width, height, bombAmount) {
 
-            const saper = document.getElementById('saper');
-            let over = false;
-            let first = true;
-            let timerVar;
-            flags = bombAmount;
-            document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
-            fillCells(width, height, bombAmount);
-            const difficulty = getDifficulty(width, height, bombAmount);
-            updateScoreTable(difficulty);
-            saper.className = `w-full flex flex-col flex-nowrap justify-center 2xl:items-${width > 30 ? 'left' : 'center'} xl:items-${width > 25 ? 'left' : 'center'} lg:items-${width > 22 ? 'left' : 'center'} md:items-${width > 15 ? 'left' : 'center'} sm:items-${width > 12 ? 'left' : 'center'} items-${width > 9 ? 'left' : 'center'} gap-1 mb-10`;
-            saper.innerHTML = '';
-            let row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
+            if(bombAmount >= width * height) {
+                console.error("There are more bombs than cells in the grid.");
+            } else {
+                const saper = document.getElementById('saper');
+                let over = false;
+                let first = true;
+                let timerVar;
+                const difficulty = getDifficulty(width, height, bombAmount);
+                console.log('Selected difficulty: ', difficulty);
 
-            cells.forEach((cell, index) => {
-                const element = createElement('div', ['size-12', 'lg:size-8', 'aspect-square', 'flex', 'flex-col', 'bg-gray-500', 'rounded-md', 'text-center', 'justify-center']);
-                element.id = index.toString();
+                // Reset stats
+                flags = bombAmount;
+                document.getElementById('flagCounter').textContent = formatThreeDigit(flags);
+                document.getElementById('face').classList.replace('fa-face-laugh-beam', 'fa-face-smile');
+                document.getElementById('face').classList.replace('fa-face-dizzy', 'fa-face-smile');
+                document.getElementById('timer').innerHTML = '000';
 
-                // FLAG
-                element.addEventListener('contextmenu', function(e) {
-                    if(!over) {
-                        if (flags > 0 && cell >= 0 && !discovered[index]) {
-                            cell = flag(index);
-                        } else if (cell < 0) {
-                            cell = unflag(index);
+                fillCells(width, height, bombAmount);
+
+                updateScoreTable(difficulty);
+
+                // Setting up game area
+                saper.className = `w-full flex flex-col flex-nowrap justify-center 2xl:items-${width > 30 ? 'left' : 'center'} xl:items-${width > 25 ? 'left' : 'center'} lg:items-${width > 22 ? 'left' : 'center'} md:items-${width > 15 ? 'left' : 'center'} sm:items-${width > 12 ? 'left' : 'center'} items-${width > 9 ? 'left' : 'center'} gap-1 mb-10`;
+                saper.innerHTML = '';
+                let row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
+
+                cells.forEach((cell, index) => {
+                    const element = createElement('div', ['size-12', 'lg:size-8', 'aspect-square', 'flex', 'flex-col', 'bg-gray-500', 'rounded-md', 'text-center', 'justify-center']);
+                    element.id = index.toString();
+
+                    // Flag (right click/long press)
+                    element.addEventListener('contextmenu', function (e) {
+                        if (!over) {
+                            if (flags > 0 && cell >= 0 && !discovered[index]) {
+                                cell = flag(index);
+                            } else if (cell < 0) {
+                                cell = unflag(index);
+                            }
+                        }
+                        e.preventDefault();
+                    }, false);
+
+                    // Discover (left click)
+                    element.onclick = () => {
+                        if (first) {
+                            timerVar = setInterval(increaseTimer, 1000);
+                            first = false;
+                        }
+
+                        if (!over && !discovered[index]) {
+
+                            if (cell === 0) {
+                                discoverArea(width, height, index);
+                            } else {
+                                discover(index);
+                            }
+
+                            if (cell >= 9) {
+                                showBombs(index);
+                                clearInterval(timerVar);
+                                document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-dizzy');
+                                over = true;
+                                console.log('Game over');
+                            }
+
+                            if (discoveredAmount() === width * height - bombAmount && over === false) {
+                                document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-laugh-beam');
+                                clearInterval(timerVar);
+                                saveTime(difficulty);
+                                updateScoreTable(difficulty);
+                                over = true;
+                                console.log('Game won!');
+                            }
                         }
                     }
-                    e.preventDefault();
-                }, false);
 
-                // DISCOVER
-                element.onclick = () => {
-                    if(first) {
-                        timerVar = setInterval(increaseTimer, 1000);
-                        first = false;
+
+                    row.appendChild(element);
+                    if (index % width === (width - 1)) {
+                        saper.appendChild(row);
+                        row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
                     }
-
-                    if(!over && !discovered[index]) {
-
-                        if (cell === 0) {
-                            discoverArea(width, height, index);
-                        } else {
-                            discover(index);
-                        }
-
-                        if (cell >= 9) {
-                            showBombs(index);
-                            clearInterval(timerVar);
-                            document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-dizzy');
-                            over = true;
-                        }
-
-                        if(discoveredAmount() === width*height-bombAmount && over === false) {
-                            document.getElementById('face').classList.replace('fa-face-smile', 'fa-face-laugh-beam');
-                            clearInterval(timerVar);
-                            saveTime(difficulty);
-                            updateScoreTable(difficulty);
-                            over = true;
-                        }
-                    }
-                }
-
-
-                row.appendChild(element);
-                if(index % width === (width-1)){
-                    saper.appendChild(row);
-                    row = createElement('div', ['flex', 'flex-row', 'flex-nowrap', 'gap-1']);
-                }
-            });
+                });
+            }
         }
 
         container.appendChild(saper);
 
-        const scoreTable = createElement('table', ['bg-white', 'p-5', 'rounded-mb']);
+
+
+        // ============================= < S C O R E > =======================================
+
+
+
+        const scoreContainer = createElement('div', ['w-[50%]', 'lg:w-[25%]', 'flex', 'flex-col', 'items-center', 'flex-nowrap', 'bg-white', 'rounded-xl', 'p-1']);
+        scoreContainer.id = 'scoreContainer';
+        const scoreTitle = createElement('p', ['font-bold'], 'TOP 5');
+        const scoreTable = createElement('table', ['w-full']);
         scoreTable.id = 'scoreTable';
-        container.appendChild(scoreTable);
+        scoreContainer.appendChild(scoreTitle);
+        scoreContainer.appendChild(scoreTable);
+        container.appendChild(scoreContainer);
 
         appContainer.appendChild(container);
 
-        // ============================ < R E N D E R > ======================================
+
+
+        // ============================== < I N I T > ========================================
+
 
 
         startGame(startArguments[0], startArguments[1], startArguments[2]);
 
 
+
         // ============================ < S T O P K A > ======================================
+
 
 
         const footer = createElement('footer', ['text-center', 'text-xs', 'text-gray-500', 'mt-10', 'pt-5', 'border-t']);
