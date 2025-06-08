@@ -38,6 +38,7 @@
     let cells = [];
     let discovered = [];
     let flags;
+    let timerVar;
     let startArguments = [9, 9, 10];
 
 
@@ -399,7 +400,6 @@
                 const saper = document.getElementById('saper');
                 let over = false;
                 let first = true;
-                let timerVar;
                 const difficulty = getDifficulty(width, height, bombAmount);
                 console.log('Selected difficulty: ', difficulty);
 
@@ -409,6 +409,7 @@
                 document.getElementById('face').classList.replace('fa-face-laugh-beam', 'fa-face-smile');
                 document.getElementById('face').classList.replace('fa-face-dizzy', 'fa-face-smile');
                 document.getElementById('timer').innerHTML = '000';
+                clearInterval(timerVar);
 
                 fillCells(width, height, bombAmount);
 
